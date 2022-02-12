@@ -38,7 +38,7 @@
 // V 1.0.1 12/20/21 DF  Made the locale data stored in the RTC chip
 // V 1.0.2 01/21/22 DF  Fixed brightness on 0 via stride, moved tails on 6,9
 
-char versionNo[]  = "Version 1.0.2\n";
+char versionNo[]  = "Version 1.0.2 LasVegasBret\n";
 
 // THINGS TO DO
 
@@ -177,7 +177,7 @@ int rtcMagic = 0x33;   // magic number for verifying RTC data
 int rtcValid = 0;   // set to rtcMagic when RTC data written to tell if it's trustworthy
 
 int HundrSec = 0;   // hundredths of seconds, maybe not needed but GPS provides it
-unsigned long GPSage;  // GPS time since last valid reading, may indicate invalid
+unsigned long GPSage = TinyGPS::GPS_INVALID_AGE;  // GPS time since last valid reading, may indicate invalid
 
 
 unsigned int lastMicros;     // for display refresh
@@ -489,11 +489,19 @@ void DecDays(void)
   }
 }
 
+int gpsStartupDelay = 10;
+int startupTick = 0;
+
 // read the GPS clock if it's there and valid, otherwise use the RTC time
-void getTheTime(void)
+int getTheTime(void)
 {
-  // Read time from the GPS receiver if it's there
-  readGPStime(myGps);   // get current time into time variables
+  int isGPSTime = 0;
+
+  if (gpsStartupDelay == 0)
+  {
+    // Read time from the GPS receiver if it's there
+    readGPStime(myGps);   // get current time into time variables
+  }
 
   // See if the GPS time is good, use either it or the RTC accordingly
   if ((GPSage == TinyGPS::GPS_INVALID_AGE) || (GPSage > 1000))     // not conencted or stale time
@@ -502,6 +510,7 @@ void getTheTime(void)
   }
   else
   {
+    isGPSTime = 1;
     Secs  = GPSSec;         // Second from GPS receiver
     Days  = GPSDay;         // Day from GPS receiver
     Mons  = GPSMon;         // Month from GPS receiver
@@ -538,6 +547,25 @@ void getTheTime(void)
     if (frame%1000 == 0) writeRTCtime();
   }
 //  if (frame%50 == 0) Serial.printf("%02d:%02d:%02d %5d\n", Hrs, Mins, Secs, GPSage);
+
+  if (gpsStartupDelay > 0 && startupTick != Secs)
+  {
+    --gpsStartupDelay;
+    startupTick = Secs;
+  }
+
+  return isGPSTime;
+}
+
+int flashTick = 0;
+void FlashLED(int intervalSeconds)
+{
+    digitalWrite(LED_BUILTIN, LOW);
+    if (flashTick != Secs && Secs % intervalSeconds == 0)
+    {
+      digitalWrite(LED_BUILTIN, HIGH);
+      flashTick = Secs;
+    }
 }
 
 // ---------------------- Rotary encoder -------------------

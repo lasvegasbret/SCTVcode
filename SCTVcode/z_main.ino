@@ -14,6 +14,7 @@ void setup()
   pinMode(encAPin,   INPUT_PULLUP);   // encoder quadrature signals
   pinMode(encBPin,   INPUT_PULLUP);
   pinMode(BlankPin, OUTPUT);   // high blanks the display
+  pinMode(LED_BUILTIN, OUTPUT);
 
   InitEnc();
   rn1 = rn2 = rn3 = rn4 = 0x45;   // random number generator seed? Why not use random()?
@@ -80,8 +81,7 @@ void loop() {
 }
 // end of test code */ 
 
- // don't do the real thing while testing 
-
+// don't do the real thing while testing 
 // real code. This is not a test
 void loop() 
 {
@@ -134,8 +134,13 @@ void loop()
     yPos = yPos / 10;
   }
 
-  getTheTime();   // read whichever clock is correctest, make it be local time
+  int isGPSTime = getTheTime();   // read whichever clock is correctest, make it be local time
   
+  if (isGPSTime)
+  {
+    FlashLED(10);
+  }
+
   blinkCount++;
   Blink = (blinkCount >> BlnkBit) & 1;  // a one bit, 5 times a second thingie
   
