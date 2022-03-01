@@ -37,8 +37,10 @@
 // V 1.0.0 11/30/21 DF  Made screensaver bigger, issued as a release
 // V 1.0.1 12/20/21 DF  Made the locale data stored in the RTC chip
 // V 1.0.2 01/21/22 DF  Fixed brightness on 0 via stride, moved tails on 6,9
+// V 1.0.3 02/12/22 DF  Fixed GPS startup by making splash screen faster, improved 6,9 some more
+// V 1.0.4 02/13/22 DF  Gated USB accesses with userial active test
 
-char versionNo[]  = "Version 1.0.2 LasVegasBret\n";
+char versionNo[]  = "Version 1.0.4 LasVegasBret\n";
 
 // THINGS TO DO
 
@@ -177,7 +179,7 @@ int rtcMagic = 0x33;   // magic number for verifying RTC data
 int rtcValid = 0;   // set to rtcMagic when RTC data written to tell if it's trustworthy
 
 int HundrSec = 0;   // hundredths of seconds, maybe not needed but GPS provides it
-unsigned long GPSage = TinyGPS::GPS_INVALID_AGE;  // GPS time since last valid reading, may indicate invalid
+unsigned long GPSage;  // GPS time since last valid reading, may indicate invalid
 
 
 unsigned int lastMicros;     // for display refresh
@@ -418,6 +420,12 @@ static void readGPStime(TinyGPS &gps)
   byte mon, days, hr, mins, sec, hund;
   int yrs;
   
+  // bail if we don't have valid serial...
+  if (!userial) {
+     GPSage = TinyGPS::GPS_INVALID_AGE;
+    return;
+  }
+
   gps.crack_datetime(&yrs, &mon, &days, &hr, &mins, &sec, &hund, &GPSage);
   
   GPSHun  = hund; 
@@ -489,19 +497,13 @@ void DecDays(void)
   }
 }
 
-int gpsStartupDelay = 10;
-int startupTick = 0;
-
 // read the GPS clock if it's there and valid, otherwise use the RTC time
 int getTheTime(void)
 {
   int isGPSTime = 0;
 
-  if (gpsStartupDelay == 0)
-  {
-    // Read time from the GPS receiver if it's there
-    readGPStime(myGps);   // get current time into time variables
-  }
+  // Read time from the GPS receiver if it's there
+  readGPStime(myGps);   // get current time into time variables
 
   // See if the GPS time is good, use either it or the RTC accordingly
   if ((GPSage == TinyGPS::GPS_INVALID_AGE) || (GPSage > 1000))     // not conencted or stale time
@@ -546,18 +548,14 @@ int getTheTime(void)
     // write time back into the RTC so that it's fresh
     if (frame%1000 == 0) writeRTCtime();
   }
-//  if (frame%50 == 0) Serial.printf("%02d:%02d:%02d %5d\n", Hrs, Mins, Secs, GPSage);
-
-  if (gpsStartupDelay > 0 && startupTick != Secs)
-  {
-    --gpsStartupDelay;
-    startupTick = Secs;
-  }
-
+  //  if (frame%50 == 0) Serial.printf("%02d:%02d:%02d %5d\n", Hrs, Mins, Secs, GPSage);
+  
   return isGPSTime;
 }
 
+  
 int flashTick = 0;
+
 void FlashLED(int intervalSeconds)
 {
     digitalWrite(LED_BUILTIN, LOW);

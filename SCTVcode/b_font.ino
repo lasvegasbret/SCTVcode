@@ -92,7 +92,7 @@ const int Seven[]   = { lin, 0, 0,12,20, 6,13,
 const int Eight[]   = { cir, 6, 6,12,12, 6,13, 
                         cir, 6,16, 8, 8, 6,13, 0x8c};
 const int Nine[]    = { cir, 6,14,12,12, 6,13, 
-                        lin, 4, 0,11, 10, 6,13, 0x8c};
+                        lin, 4, 0,11,10, 6,13, 0x8c};
 const int Colon[]   = { cir, 2, 6, 4, 4, 6,13, 
                         cir, 2,14, 4, 4, 6,13, 0x84};
 const int SemiCol[] = { cir, 3,14, 2, 2, 6,13, 

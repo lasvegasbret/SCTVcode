@@ -113,15 +113,17 @@ void loop()
         Serial.printf("Connect before begin\n");
         if (drivers[i] == &userial) 
         {
-          userial.begin(usbBaudRate);
+          userial.begin(usbBaudRate); // This hangs if splash screen is too big, awaiting proper fix
         }
         Serial.printf("Exiting connect code\n");
       }
     }
   }
   // Read the USB serial port if anything's there
-  while (userial.available())
-    myGps.encode(userial.read());
+  if (userial) {
+    while (userial.available())
+      myGps.encode(userial.read());
+  }
 
   if ((theClock != 1) && (theClock != 2))  // Pong and Tetris use position controls as paddles
   {
